@@ -37,49 +37,55 @@ body {
   min-height: 100vh;
 }
 
+.hidden { display: none !important; }
+
 .layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
+  display: flex;
+  gap: 0;
   min-height: 100vh;
 }
 
 .sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  padding: 1.5rem 1rem;
+  background: linear-gradient(180deg, #0e1116 0%, #0b0d11 100%);
+  border-right: 1px solid rgba(255,255,255,0.03);
+  padding: 1.25rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  width: 280px;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.6) inset;
 }
 
 .sidebar-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  color: #bdbdbd;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0 8px;
-  margin-bottom: 8px;
+  letter-spacing: 0.12em;
+  padding: 0 14px;
+  margin-bottom: 6px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius);
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   border: none;
-  background: none;
-  width: 100%;
+  background: transparent;
+  width: calc(100% - 28px);
   text-align: left;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.12s, color 0.12s, transform 0.08s;
 }
 
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+
+.nav-item:active { transform: translateY(1px); }
 
 .nav-item svg {
   width: 16px; height: 16px;
@@ -101,8 +107,9 @@ body {
 .status-dot.running { background: var(--green); box-shadow: 0 0 6px var(--green); }
 
 .main {
-  padding: 2rem;
-  max-width: 680px;
+  padding: 2rem 2.2rem;
+  flex: 1;
+  overflow: auto;
 }
 
 .page { display: none; }
@@ -144,8 +151,8 @@ select option { background: var(--surface2); }
 .env-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .env-btn {
@@ -188,9 +195,9 @@ select option { background: var(--surface2); }
 .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
 
 .cmd-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 14px;
 }
@@ -217,14 +224,14 @@ select option { background: var(--surface2); }
 .btn-row { display: flex; gap: 8px; }
 
 .btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 9px 16px;
-  border-radius: var(--radius);
   font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: background 0.15s, transform 0.1s;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .btn:active { transform: scale(0.98); }
@@ -255,6 +262,17 @@ select option { background: var(--surface2); }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.ok { border-color: var(--green); color: var(--green); }
 .toast.err { border-color: var(--red); color: var(--red); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; display: flex; flex-direction: row; gap: 6px; padding: 8px; overflow-x: auto; }
+  .sidebar-title { display: none; }
+  .nav-item { min-width: 120px; justify-content: center; border-radius: 8px; }
+  .main { padding: 16px; }
+  .env-grid { grid-template-columns: repeat(1, 1fr); }
+  .cmd-body { font-size: 11px; }
+}
 
 /* history */
 .history-item {
@@ -287,6 +305,7 @@ select option { background: var(--surface2); }
 }
 .h-del:hover { color: var(--red); }
 .empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 2rem; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -311,7 +330,6 @@ select option { background: var(--surface2); }
   </nav>
 
   <main class="main">
-
     <!-- LAUNCH -->
     <div class="page active" id="page-launch">
       <h2>launch</h2>
@@ -382,6 +400,11 @@ select option { background: var(--surface2); }
             <option value="480">480p</option>
           </select>
         </div>
+        <div class="field">
+          <div class="label">ani-cli flags</div>
+          <input type="text" id="ani-flags" placeholder="--select-nth 1 --exit-after-play" oninput="buildCmd()" />
+          <div class="note">Add any ani-cli flags you want. If empty, defaults are used.</div>
+        </div>
       </div>
 
       <hr class="divider">
@@ -410,12 +433,70 @@ select option { background: var(--surface2); }
     <!-- HISTORY -->
     <div class="page" id="page-history">
       <h2>history</h2>
+      <div class="field btn-row">
+        <button class="btn btn-primary" onclick="loadPendingSessions()">Refresh pending sessions</button>
+        <button class="btn btn-primary" onclick="pushAllSessionsNow()">Push all pending sessions</button>
+      </div>
+      <div id="pending-sessions-list"></div>
+      <div class="section-title">Command history</div>
       <div id="history-list"></div>
     </div>
 
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <h2>settings</h2>
+      <div class="section-title">AniList</div>
+      <div class="field">
+        <div class="label">AniList status</div>
+        <div id="anilist-status" class="note">not connected</div>
+      </div>
+      <div id="anilist-auth-actions">
+        <div class="field">
+          <div class="label">Anilist token</div>
+          <input type="text" id="s-anilist-token" placeholder="Paste your Anilist OAuth token here" oninput="saveSettings(); updateAnilistConnectionUI()">
+          <div class="note">Store a personal AniList access token to enable automatic progress updates.</div>
+        </div>
+        <div class="field">
+          <div class="label">Anilist media title</div>
+          <input type="text" id="s-anilist-title" placeholder="Enter anime title or search term" oninput="saveSettings()">
+          <div class="note">Use the AniList title to resolve media if you do not have a media id.</div>
+        </div>
+        <div class="field">
+          <div class="label">Anilist media id</div>
+          <input type="text" id="s-anilist-media-id" placeholder="Numeric AniList media id (optional)" oninput="saveSettings()">
+          <div class="note">You can optionally store a media id to auto-add progress when launching.</div>
+        </div>
+        <div id="anilist-connect-area">
+          <div class="field">
+            <button class="btn btn-ghost" id="connect-anilist">Connect AniList</button>
+          </div>
+          <div class="field">
+            <div class="label">Client ID</div>
+            <input type="text" id="s-anilist-client-id" placeholder="AniList Client ID" oninput="saveSettings()">
+          </div>
+          <div class="field">
+            <div class="label">Client Secret</div>
+            <input type="text" id="s-anilist-client-secret" placeholder="AniList Client Secret" oninput="saveSettings()">
+          </div>
+          <div class="field">
+            <div class="label">Or paste auth code</div>
+            <input type="text" id="s-anilist-code" placeholder="Paste the ?code=... value from redirect here">
+            <div style="margin-top:8px">
+              <button class="btn btn-ghost" id="exchange-code">Exchange code</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-title">Session JSON</div>
+      <div class="field">
+        <div class="label">Session details</div>
+        <textarea id="s-anilist-session-json" rows="6" style="width:100%; font-family:var(--mono); font-size:13px; background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:8px;" placeholder='{"title":"My Anime","media_id":12345,"progress":607}'></textarea>
+        <div class="note">Optional session JSON. Use this to record what episodes were watched and push the entry later.</div>
+      </div>
+      <div class="field btn-row">
+        <button class="btn btn-primary" onclick="saveSessionNow()">Save session</button>
+      </div>
+      <hr class="divider">
       <div class="field">
         <div class="label">user agent</div>
         <input type="text" id="s-ua" oninput="saveSettings(); buildCmd()" />
@@ -452,7 +533,12 @@ const DEFAULTS = {
   referer: 'https://kwik.cx/',
   winuser: 'vaibh',
   extraArch: '',
-  extraWin: ''
+  extraWin: '',
+  anilistToken: '',
+  anilistMediaId: '',
+  anilistTitle: '',
+  anilistClientId: '',
+  anilistClientSecret: ''
 };
 
 let currentEnv = 'mpv-arch';
@@ -470,6 +556,12 @@ function saveSettings() {
     winuser: document.getElementById('s-winuser').value,
     extraArch: document.getElementById('s-extra-arch').value,
     extraWin: document.getElementById('s-extra-win').value,
+    aniCliFlags: document.getElementById('ani-flags').value,
+    anilistToken: document.getElementById('s-anilist-token').value,
+    anilistMediaId: document.getElementById('s-anilist-media-id').value,
+    anilistTitle: document.getElementById('s-anilist-title').value,
+    anilistClientId: document.getElementById('s-anilist-client-id').value,
+    anilistClientSecret: document.getElementById('s-anilist-client-secret').value,
   }));
 }
 
@@ -486,17 +578,78 @@ function applySettings(s) {
   document.getElementById('s-winuser').value = s.winuser;
   document.getElementById('s-extra-arch').value = s.extraArch || '';
   document.getElementById('s-extra-win').value = s.extraWin || '';
+  document.getElementById('ani-flags').value = s.aniCliFlags || '';
+  document.getElementById('s-anilist-token').value = s.anilistToken || '';
+  document.getElementById('s-anilist-media-id').value = s.anilistMediaId || '';
+  document.getElementById('s-anilist-title').value = s.anilistTitle || '';
+  document.getElementById('s-anilist-client-id').value = s.anilistClientId || '';
+  document.getElementById('s-anilist-client-secret').value = s.anilistClientSecret || '';
   document.getElementById('winuser').value = s.winuser;
   document.getElementById('referer-arch').value = s.referer;
   document.getElementById('referer-win').value = s.referer;
+  updateAnilistConnectionUI();
 }
+
+// Listen for tokens from the OAuth popup
+window.addEventListener('message', (ev) => {
+  try {
+    const data = ev.data;
+    if (data && data.access_token) {
+      document.getElementById('s-anilist-token').value = data.access_token;
+      if (data.refresh_token) {
+        localStorage.setItem('al-anilist-refresh', data.refresh_token);
+      }
+      saveSettings();
+      updateAnilistConnectionUI();
+      toast('anilist connected', 'ok');
+    }
+  } catch (e) { }
+});
+
+document.getElementById('connect-anilist')?.addEventListener('click', () => {
+  const s = loadSettings();
+  const clientId = document.getElementById('s-anilist-client-id').value.trim() || s.anilistClientId;
+  if (!clientId) { toast('set client id in settings first', 'err'); return; }
+  const redirect = encodeURIComponent('http://localhost:5000/callback');
+  const clientSecret = document.getElementById('s-anilist-client-secret').value.trim() || s.anilistClientSecret;
+  if (!clientSecret) { toast('set client secret too', 'err'); return; }
+  const url = `/auth/start?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}&redirect_uri=${redirect}`;
+  window.open(url, 'anilist-auth', 'width=900,height=700');
+});
+
+document.getElementById('exchange-code')?.addEventListener('click', async () => {
+  const code = document.getElementById('s-anilist-code').value.trim();
+  if (!code) { toast('paste a code first', 'err'); return; }
+  try {
+    const s = loadSettings();
+    const clientId = document.getElementById('s-anilist-client-id').value.trim() || s.anilistClientId;
+    const clientSecret = document.getElementById('s-anilist-client-secret').value.trim() || s.anilistClientSecret;
+    const body = { code, redirect_uri: 'http://localhost:5000/callback' };
+    if (clientId) body.client_id = clientId;
+    if (clientSecret) body.client_secret = clientSecret;
+    const r = await fetch('/auth/exchange', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.success && j.tokens && j.tokens.access_token) {
+      document.getElementById('s-anilist-token').value = j.tokens.access_token;
+      saveSettings();
+      updateAnilistConnectionUI();
+      toast('token saved', 'ok');
+    } else {
+      toast('exchange failed', 'err');
+      console.error(j);
+    }
+  } catch (e) { toast('server error', 'err'); }
+});
 
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'history') renderHistory();
+  if (id === 'history') {
+    renderHistory();
+    loadPendingSessions();
+  }
 }
 
 function setEnv(env) {
@@ -532,7 +685,9 @@ function buildCmd() {
     const q = document.getElementById('ani-query').value.trim();
     const ep = document.getElementById('ani-ep').value.trim();
     const q2 = document.getElementById('ani-quality').value;
+    const flags = document.getElementById('ani-flags').value.trim();
     let parts = ['wsl', 'ani-cli', '--select-nth', '1', '--exit-after-play'];
+    if (flags) parts = parts.concat(flags.split(/\s+/).filter(Boolean));
     if (ep) parts.push('-e', ep);
     if (q2) parts.push('-q', q2 + 'p');
     if (q) parts.push(`"${q}"`);
@@ -554,15 +709,22 @@ async function playNow() {
     payload.url = document.getElementById('m3u8-arch').value.trim();
     payload.referer = document.getElementById('referer-arch').value.trim();
     payload.extra = s.extraArch;
+    payload.anilist_token = document.getElementById('s-anilist-token').value.trim() || s.anilistToken;
+    payload.anilist_media_id = document.getElementById('s-anilist-media-id').value.trim() || s.anilistMediaId;
   } else if (currentEnv === 'mpv-win') {
     payload.url = document.getElementById('m3u8-win').value.trim();
     payload.referer = document.getElementById('referer-win').value.trim();
     payload.winuser = document.getElementById('winuser').value.trim();
     payload.extra = s.extraWin;
+    payload.anilist_token = document.getElementById('s-anilist-token').value.trim() || s.anilistToken;
+    payload.anilist_media_id = document.getElementById('s-anilist-media-id').value.trim() || s.anilistMediaId;
   } else {
     payload.url = document.getElementById('ani-query').value.trim();
     payload.episode = document.getElementById('ani-ep').value.trim();
     payload.quality = document.getElementById('ani-quality').value;
+    payload.flags = document.getElementById('ani-flags').value.trim();
+    payload.anilist_token = document.getElementById('s-anilist-token').value.trim() || s.anilistToken;
+    payload.anilist_media_id = document.getElementById('s-anilist-media-id').value.trim() || s.anilistMediaId;
   }
 
   try {
@@ -591,7 +753,137 @@ async function stopNow() {
     await fetch('/stop', { method: 'POST' });
     toast('stopped', 'ok');
     document.getElementById('status-dot').classList.remove('running');
+
+    saveSessionNow();
   } catch { toast('server not reachable', 'err'); }
+}
+
+async function saveSessionNow() {
+  const s = loadSettings();
+  const mediaId = document.getElementById('s-anilist-media-id').value.trim() || s.anilistMediaId;
+  const title = document.getElementById('s-anilist-title').value.trim() || s.anilistTitle || document.getElementById('ani-query')?.value || document.getElementById('m3u8-arch')?.value || '';
+  const sessionJson = document.getElementById('s-anilist-session-json').value.trim();
+
+  let payload = {
+    env: currentEnv,
+    url: currentEnv === 'ani-cli' ? document.getElementById('ani-query').value.trim() : currentEnv === 'mpv-arch' ? document.getElementById('m3u8-arch').value.trim() : document.getElementById('m3u8-win').value.trim(),
+    title,
+    media_id: mediaId,
+  };
+
+  if (sessionJson) {
+    try {
+      const parsed = JSON.parse(sessionJson);
+      payload = { ...payload, ...parsed };
+    } catch (e) {
+      toast('invalid session JSON', 'err');
+      return false;
+    }
+  }
+
+  if (!payload.media_id && !payload.title) { toast('missing media id or title', 'err'); return false; }
+  if (!payload.progress && !payload.end && !payload.episode) {
+    if (currentEnv === 'ani-cli') {
+      payload.episode = document.getElementById('ani-ep').value.trim();
+      payload.progress = payload.episode;
+    }
+  }
+
+  if (!payload.progress && !payload.end && !payload.episode) {
+    toast('missing progress or episode', 'err');
+    return false;
+  }
+
+  try {
+    const r = await fetch('/session/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const j = await r.json();
+    if (j.success) {
+      toast('session saved', 'ok');
+      loadPendingSessions();
+      return true;
+    }
+    toast(j.error || 'save failed', 'err');
+  } catch (e) {
+    toast('session save failed', 'err');
+  }
+  return false;
+}
+
+async function pushAllSessionsNow() {
+  const s = loadSettings();
+  const token = document.getElementById('s-anilist-token').value.trim() || s.anilistToken;
+  if (!token) { toast('missing token', 'err'); return; }
+
+  try {
+    const r = await fetch('/session/push', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ token }) });
+    const j = await r.json();
+    if (j.success) {
+      const successCount = j.results.filter(x => x.success).length;
+      toast(`${successCount} session(s) pushed`, 'ok');
+      loadPendingSessions();
+      return;
+    }
+    toast(j.error || 'push failed', 'err');
+  } catch (e) {
+    toast('push failed', 'err');
+  }
+}
+
+async function loadPendingSessions() {
+  try {
+    const r = await fetch('/session/list');
+    const j = await r.json();
+    if (j.success) {
+      renderPendingSessions(j.sessions || []);
+      return;
+    }
+  } catch (e) {
+    // ignore
+  }
+  renderPendingSessions([]);
+}
+
+function renderPendingSessions(sessions) {
+  const container = document.getElementById('pending-sessions-list');
+  if (!container) return;
+  if (!sessions.length) {
+    container.innerHTML = '<div class="note">No pending watched sessions saved yet.</div>';
+    return;
+  }
+  container.innerHTML = sessions.map(s => {
+    const payload = s.payload && typeof s.payload === 'object' ? s.payload : {};
+    const json = JSON.stringify(payload, null, 2);
+    const title = payload.title || payload.media_title || payload.name || 'untitled';
+    const mediaId = payload.media_id || payload.mediaId || '';
+    const progress = payload.progress || payload.end || payload.episode || payload.watch || '?';
+    const start = payload.start || payload.startEpisode || payload.start_episode;
+    const end = payload.end || payload.progress;
+    const watchedCount = (start && end) ? (parseInt(end, 10) - parseInt(start, 10) + 1) : 1;
+    return `
+      <div class="session-item">
+        <div><strong>${title}</strong> ${mediaId ? `(id ${mediaId})` : ''}</div>
+        <div>progress: ${progress}</div>
+        <div>saved: ${new Date(s.created_at).toLocaleString()}</div>
+        <pre style="white-space:pre-wrap; word-break:break-word; background:var(--surface2); padding:10px; border-radius:8px; border:1px solid var(--border);">${json}</pre>
+        <button class="btn btn-ghost" onclick="deletePendingSession('${s.id}')">Remove</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function deletePendingSession(id) {
+  try {
+    const r = await fetch('/session/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    const j = await r.json();
+    if (j.success) {
+      toast('session removed', 'ok');
+      loadPendingSessions();
+      return;
+    }
+    toast(j.error || 'delete failed', 'err');
+  } catch (e) {
+    toast('delete failed', 'err');
+  }
 }
 
 function pollStatus() {
@@ -669,6 +961,47 @@ function toast(msg, type) {
 applySettings(loadSettings());
 buildCmd();
 pollStatus();
+ensureAnilistTokenFromServer();
+loadPendingSessions();
+
+async function ensureAnilistTokenFromServer() {
+  const savedToken = document.getElementById('s-anilist-token').value.trim();
+  if (savedToken) {
+    updateAnilistConnectionUI();
+    return;
+  }
+  try {
+    const res = await fetch('/auth/token');
+    if (!res.ok) return;
+    const j = await res.json();
+    if (j.success && j.access_token) {
+      document.getElementById('s-anilist-token').value = j.access_token;
+      saveSettings();
+      toast('restored saved anilist token', 'ok');
+    }
+  } catch (e) {
+    // ignore if backend token is unavailable
+  } finally {
+    updateAnilistConnectionUI();
+  }
+}
+
+function updateAnilistConnectionUI() {
+  const token = document.getElementById('s-anilist-token').value.trim();
+  const status = document.getElementById('anilist-status');
+  const connectArea = document.getElementById('anilist-connect-area');
+  if (token) {
+    status.textContent = 'connected';
+    status.classList.add('connected');
+    status.classList.remove('disconnected');
+    connectArea.classList.add('hidden');
+  } else {
+    status.textContent = 'not connected';
+    status.classList.remove('connected');
+    status.classList.add('disconnected');
+    connectArea.classList.remove('hidden');
+  }
+}
 </script>
 </body>
 </html>
