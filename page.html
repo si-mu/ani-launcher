@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ani-launcher</title>
+<style>
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --surface3: #262626;
+  --border: #2a2a2a;
+  --border-focus: #5b7fff;
+  --text: #e2e2e2;
+  --text-muted: #555;
+  --text-secondary: #888;
+  --accent: #5b7fff;
+  --accent-dim: #1a1f3a;
+  --green: #3ecf8e;
+  --green-dim: #0d2b1e;
+  --red: #e55;
+  --red-dim: #2b0f0f;
+  --yellow: #f5a623;
+  --yellow-dim: #2b1f0a;
+  --radius: 8px;
+  --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 8px;
+  margin-bottom: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+
+.nav-item svg {
+  width: 16px; height: 16px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.status-dot.running { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+.main {
+  padding: 2rem;
+  max-width: 680px;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.field { margin-bottom: 14px; }
+
+input[type=text], select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  padding: 8px 11px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input[type=text]:focus, select:focus { border-color: var(--border-focus); }
+select option { background: var(--surface2); }
+
+.env-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.env-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 10px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.env-btn:hover { border-color: #3a3a3a; color: var(--text); }
+.env-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+.env-btn svg {
+  display: block; margin: 0 auto 6px;
+  width: 20px; height: 20px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.env-btn span { font-size: 12px; font-weight: 500; }
+
+.note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.note.warn { border-color: #3a2a0a; background: var(--yellow-dim); color: var(--yellow); }
+.note code { font-family: var(--mono); font-size: 11px; background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px; }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+.cmd-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.cmd-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cmd-header span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.cmd-body {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #c8d3f5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.7;
+  min-height: 72px;
+}
+
+.btn-row { display: flex; gap: 8px; }
+
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #4a6ee0; }
+.btn-primary:disabled { background: #2a2a2a; color: var(--text-muted); cursor: not-allowed; transform: none; }
+.btn-stop { background: var(--red-dim); color: var(--red); border: 1px solid #3a1515; }
+.btn-stop:hover { background: #3a1515; }
+.btn-ghost { background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface3); color: var(--text); }
+
+.btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.ok { border-color: var(--green); color: var(--green); }
+.toast.err { border-color: var(--red); color: var(--red); }
+
+/* history */
+.history-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.history-item:hover { border-color: #3a3a3a; }
+.env-pill {
+  font-size: 10px; padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--accent-dim); color: var(--accent);
+  white-space: nowrap; flex-shrink: 0;
+}
+.h-url {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1;
+}
+.h-ts { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.h-del {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 18px; line-height: 1; flex-shrink: 0;
+}
+.h-del:hover { color: var(--red); }
+.empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 2rem; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-title">ani-launcher</div>
+    <button class="nav-item active" onclick="showPage('launch', this)">
+      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      launch
+      <span class="status-dot" id="status-dot"></span>
+    </button>
+    <button class="nav-item" onclick="showPage('history', this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      history
+    </button>
+    <hr class="sidebar-divider">
+    <button class="nav-item" onclick="showPage('settings', this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      settings
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <!-- LAUNCH -->
+    <div class="page active" id="page-launch">
+      <h2>launch</h2>
+
+      <div class="label">environment</div>
+      <div class="env-grid">
+        <button class="env-btn active" id="btn-mpv-arch" onclick="setEnv('mpv-arch')">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>
+          <span>mpv · Arch</span>
+        </button>
+        <button class="env-btn" id="btn-mpv-win" onclick="setEnv('mpv-win')">
+          <svg viewBox="0 0 24 24"><path d="M3 5.5L10.5 4.5V11.5H3V5.5Z"/><path d="M11.5 4.35L21 3V11.5H11.5V4.35Z"/><path d="M3 12.5H10.5V19.5L3 18.5V12.5Z"/><path d="M11.5 12.5H21V21L11.5 19.65V12.5Z"/></svg>
+          <span>mpv · Windows</span>
+        </button>
+        <button class="env-btn" id="btn-ani-cli" onclick="setEnv('ani-cli')">
+          <svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
+          <span>ani-cli</span>
+        </button>
+      </div>
+
+      <!-- mpv arch -->
+      <div id="panel-mpv-arch">
+        <div class="note">paste the <code>uwu.m3u8</code> URL from Firefox DevTools → F12 → Network → filter <code>m3u8</code> → play episode.</div>
+        <div class="field">
+          <div class="label">m3u8 url</div>
+          <input type="text" id="m3u8-arch" placeholder="https://vault-99.owocdn.top/stream/.../uwu.m3u8" oninput="buildCmd()" />
+        </div>
+        <div class="field">
+          <div class="label">referer</div>
+          <input type="text" id="referer-arch" value="https://kwik.cx/" oninput="buildCmd()" />
+        </div>
+      </div>
+
+      <!-- mpv win -->
+      <div id="panel-mpv-win" style="display:none">
+        <div class="note">requires mpv on Windows — run <code>winget install mpv</code> in PowerShell first.</div>
+        <div class="field">
+          <div class="label">m3u8 url</div>
+          <input type="text" id="m3u8-win" placeholder="https://vault-99.owocdn.top/stream/.../uwu.m3u8" oninput="buildCmd()" />
+        </div>
+        <div class="field">
+          <div class="label">referer</div>
+          <input type="text" id="referer-win" value="https://kwik.cx/" oninput="buildCmd()" />
+        </div>
+        <div class="field">
+          <div class="label">windows username</div>
+          <input type="text" id="winuser" value="vaibh" oninput="buildCmd()" />
+        </div>
+      </div>
+
+      <!-- ani-cli -->
+      <div id="panel-ani-cli" style="display:none">
+        <div class="note">ani-cli runs in WSL by default. Automatically selects first result.</div>
+        <div class="field">
+          <div class="label">anime title</div>
+          <input type="text" id="ani-query" placeholder="One Piece" oninput="buildCmd()" />
+        </div>
+        <div class="field">
+          <div class="label">episode</div>
+          <input type="text" id="ani-ep" placeholder="1" oninput="buildCmd()" />
+        </div>
+        <div class="field">
+          <div class="label">quality</div>
+          <select id="ani-quality" onchange="buildCmd()">
+            <option value="">best</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="cmd-box">
+        <div class="cmd-header">
+          <span>command</span>
+          <button class="btn btn-ghost" style="padding:4px 10px; font-size:12px;" onclick="copyCmd()">copy</button>
+        </div>
+        <div class="cmd-body" id="cmd-out"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="play-btn" onclick="playNow()">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          play
+        </button>
+        <button class="btn btn-stop" onclick="stopNow()">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          stop
+        </button>
+        <button class="btn btn-ghost" onclick="saveHistory()">save</button>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <h2>history</h2>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <h2>settings</h2>
+      <div class="field">
+        <div class="label">user agent</div>
+        <input type="text" id="s-ua" oninput="saveSettings(); buildCmd()" />
+      </div>
+      <div class="field">
+        <div class="label">default referer</div>
+        <input type="text" id="s-referer" oninput="saveSettings()" />
+      </div>
+      <div class="field">
+        <div class="label">windows username</div>
+        <input type="text" id="s-winuser" oninput="saveSettings()" />
+      </div>
+      <div class="field">
+        <div class="label">extra mpv flags (arch)</div>
+        <input type="text" id="s-extra-arch" placeholder="e.g. --volume=80 --fs" oninput="saveSettings(); buildCmd()" />
+      </div>
+      <div class="field">
+        <div class="label">extra mpv flags (windows)</div>
+        <input type="text" id="s-extra-win" placeholder="e.g. --fullscreen" oninput="saveSettings(); buildCmd()" />
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="clearSettings()">reset defaults</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULTS = {
+  ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0',
+  referer: 'https://kwik.cx/',
+  winuser: 'vaibh',
+  extraArch: '',
+  extraWin: ''
+};
+
+let currentEnv = 'mpv-arch';
+let statusInterval = null;
+
+function loadSettings() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('al-s') || '{}') }; }
+  catch { return { ...DEFAULTS }; }
+}
+
+function saveSettings() {
+  localStorage.setItem('al-s', JSON.stringify({
+    ua: document.getElementById('s-ua').value,
+    referer: document.getElementById('s-referer').value,
+    winuser: document.getElementById('s-winuser').value,
+    extraArch: document.getElementById('s-extra-arch').value,
+    extraWin: document.getElementById('s-extra-win').value,
+  }));
+}
+
+function clearSettings() {
+  localStorage.removeItem('al-s');
+  applySettings(DEFAULTS);
+  buildCmd();
+  toast('settings reset', 'ok');
+}
+
+function applySettings(s) {
+  document.getElementById('s-ua').value = s.ua;
+  document.getElementById('s-referer').value = s.referer;
+  document.getElementById('s-winuser').value = s.winuser;
+  document.getElementById('s-extra-arch').value = s.extraArch || '';
+  document.getElementById('s-extra-win').value = s.extraWin || '';
+  document.getElementById('winuser').value = s.winuser;
+  document.getElementById('referer-arch').value = s.referer;
+  document.getElementById('referer-win').value = s.referer;
+}
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'history') renderHistory();
+}
+
+function setEnv(env) {
+  currentEnv = env;
+  ['mpv-arch','mpv-win','ani-cli'].forEach(e => {
+    document.getElementById('btn-' + e).classList.toggle('active', e === env);
+    document.getElementById('panel-' + e).style.display = e === env ? '' : 'none';
+  });
+  buildCmd();
+}
+
+function buildCmd() {
+  const s = loadSettings();
+  let cmd = '';
+
+  if (currentEnv === 'mpv-arch') {
+    const url = document.getElementById('m3u8-arch').value.trim() || 'M3U8_URL';
+    const ref = document.getElementById('referer-arch').value.trim() || s.referer;
+    const origin = ref.replace(/\/$/, '');
+    const extra = s.extraArch ? ' \\\n  ' + s.extraArch : '';
+    cmd = `wsl mpv \\\n  --http-header-fields="Referer: ${ref},Origin: ${origin}" \\\n  --user-agent="${s.ua}" \\\n  --demuxer=lavf \\\n  --demuxer-lavf-format=hls \\\n  --cache=yes \\\n  --demuxer-max-bytes=100MiB${extra} \\\n  "${url}"`;
+  }
+
+  if (currentEnv === 'mpv-win') {
+    const url = document.getElementById('m3u8-win').value.trim() || 'M3U8_URL';
+    const ref = document.getElementById('referer-win').value.trim() || s.referer;
+    const origin = ref.replace(/\/$/, '');
+    const extra = s.extraWin ? ' \\\n  ' + s.extraWin : '';
+    cmd = `"C:\\Program Files\\MPV Player\\mpv.exe" \\\n  --http-header-fields="Referer: ${ref},Origin: ${origin}" \\\n  --user-agent="${s.ua}" \\\n  --demuxer=lavf \\\n  --demuxer-lavf-format=hls \\\n  --cache=yes \\\n  --demuxer-max-bytes=100MiB${extra} \\\n  "${url}"`;
+  }
+
+  if (currentEnv === 'ani-cli') {
+    const q = document.getElementById('ani-query').value.trim();
+    const ep = document.getElementById('ani-ep').value.trim();
+    const q2 = document.getElementById('ani-quality').value;
+    let parts = ['wsl', 'ani-cli', '--select-nth', '1', '--exit-after-play'];
+    if (ep) parts.push('-e', ep);
+    if (q2) parts.push('-q', q2 + 'p');
+    if (q) parts.push(`"${q}"`);
+    cmd = parts.join(' ');
+  }
+
+  document.getElementById('cmd-out').textContent = cmd;
+}
+
+async function playNow() {
+  const btn = document.getElementById('play-btn');
+  btn.disabled = true;
+  btn.textContent = 'launching…';
+
+  const s = loadSettings();
+  const payload = { env: currentEnv };
+
+  if (currentEnv === 'mpv-arch') {
+    payload.url = document.getElementById('m3u8-arch').value.trim();
+    payload.referer = document.getElementById('referer-arch').value.trim();
+    payload.extra = s.extraArch;
+  } else if (currentEnv === 'mpv-win') {
+    payload.url = document.getElementById('m3u8-win').value.trim();
+    payload.referer = document.getElementById('referer-win').value.trim();
+    payload.winuser = document.getElementById('winuser').value.trim();
+    payload.extra = s.extraWin;
+  } else {
+    payload.url = document.getElementById('ani-query').value.trim();
+    payload.episode = document.getElementById('ani-ep').value.trim();
+    payload.quality = document.getElementById('ani-quality').value;
+  }
+
+  try {
+    const res = await fetch('/play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('mpv launched ✓', 'ok');
+      pollStatus();
+    } else {
+      toast(data.error || 'failed', 'err');
+    }
+  } catch (e) {
+    toast('server not reachable', 'err');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> play';
+}
+
+async function stopNow() {
+  try {
+    await fetch('/stop', { method: 'POST' });
+    toast('stopped', 'ok');
+    document.getElementById('status-dot').classList.remove('running');
+  } catch { toast('server not reachable', 'err'); }
+}
+
+function pollStatus() {
+  if (statusInterval) clearInterval(statusInterval);
+  statusInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/status');
+      const data = await res.json();
+      document.getElementById('status-dot').classList.toggle('running', data.running);
+      if (!data.running) clearInterval(statusInterval);
+    } catch { clearInterval(statusInterval); }
+  }, 2000);
+}
+
+function copyCmd() {
+  navigator.clipboard.writeText(document.getElementById('cmd-out').textContent).then(() => toast('copied', 'ok'));
+}
+
+function saveHistory() {
+  const cmd = document.getElementById('cmd-out').textContent;
+  const url = currentEnv === 'mpv-arch' ? document.getElementById('m3u8-arch').value :
+               currentEnv === 'mpv-win' ? document.getElementById('m3u8-win').value :
+               document.getElementById('ani-query').value;
+  if (!url) { toast('nothing to save', 'err'); return; }
+  const h = getHistory();
+  h.unshift({ id: Date.now(), env: currentEnv, url, cmd, ts: new Date().toLocaleString() });
+  localStorage.setItem('al-h', JSON.stringify(h.slice(0, 50)));
+  toast('saved', 'ok');
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('al-h') || '[]'); } catch { return []; }
+}
+
+function renderHistory() {
+  const h = getHistory();
+  const el = document.getElementById('history-list');
+  if (!h.length) { el.innerHTML = '<div class="empty">no history yet</div>'; return; }
+  el.innerHTML = h.map(e => `
+    <div class="history-item" onclick="loadHistory(${e.id})">
+      <span class="env-pill">${e.env}</span>
+      <span class="h-url">${e.url}</span>
+      <span class="h-ts">${e.ts}</span>
+      <button class="h-del" onclick="event.stopPropagation();delHistory(${e.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function loadHistory(id) {
+  const e = getHistory().find(x => x.id === id);
+  if (!e) return;
+  showPage('launch', document.querySelector('.nav-item'));
+  setEnv(e.env);
+  if (e.env === 'mpv-arch') document.getElementById('m3u8-arch').value = e.url;
+  if (e.env === 'mpv-win') document.getElementById('m3u8-win').value = e.url;
+  if (e.env === 'ani-cli') document.getElementById('ani-query').value = e.url;
+  buildCmd();
+}
+
+function delHistory(id) {
+  localStorage.setItem('al-h', JSON.stringify(getHistory().filter(x => x.id !== id)));
+  renderHistory();
+}
+
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = 'toast', 2200);
+}
+
+// init
+applySettings(loadSettings());
+buildCmd();
+pollStatus();
+</script>
+</body>
+</html>
